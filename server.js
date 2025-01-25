@@ -34,7 +34,14 @@ io.on('connection', (socket) => {
 
   // Handle call response
   socket.on('callResponse', (data) => {
-    socket.to(data.callerSocketId).emit('callResponse', data);
+    if (data.response === 'accept') {
+      // Broadcast accept to both parties
+      io.to(data.callerSocketId).emit('callAccepted');
+      io.to(socket.id).emit('callAccepted');
+    } else {
+      // Broadcast reject to caller
+      io.to(data.callerSocketId).emit('callRejected');
+    }
   });
 
   // Signaling for WebRTC
