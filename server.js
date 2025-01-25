@@ -5,30 +5,52 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-
-// Serve the HTML ppppppage
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-// Socket.IO for signaling
+// Store online users
+const onlineUsers = new Map();
+
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+  console.log('A user connected:', socket.id);
 
-    // Handle signaling messages
-    socket.on('signal', (data) => {
-        // Broadcast the signal to the other peer
-        socket.broadcast.emit('signal', data);
-    });
+  // Register user
+  socket.on('register', (username) => {
+    onlineUsers.set(socket.id, username);
+    io.emit('userList', Array.from(onlineUsers.entries()));
+  });
 
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+  // Call invitation
+  socket.on('callInvite', (data) => {
+    socket.to(data.targetSocketId).emit('incomingCall', {
+      callerSocketId: socket.id,
+      callerName: data.callerName
     });
+  });
+
+  // Handle call response
+  socket.on('callResponse', (data) => {
+    socket.to(data.callerSocketId).emit('callResponse', data);
+  });
+
+  // Signaling for WebRTC
+  socket.on('signal', (data) => {
+    socket.to(data.targetSocketId).emit('signal', data);
+  });
+
+  // Disconnect
+  socket.on('disconnect', () => {
+    onlineUsers.delete(socket.id);
+    io.emit('userList', Array.from(onlineUsers.entries()));
+    console.log('User disconnected:', socket.id);
+  });
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
