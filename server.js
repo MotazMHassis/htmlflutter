@@ -45,13 +45,14 @@ io.on('connection', (socket) => {
   });
 
   // Signaling for WebRTC
-  // Signaling for WebRTC
   socket.on('signal', (data) => {
     // Log the signaling data
-    if (data.sdp) {
-      console.log(`SDP ${data.sdp.type} from ${socket.id}:`, data.sdp);
-    } else if (data.candidate) {
-      console.log(`ICE candidate from ${socket.id}:`, data.candidate);
+    if (data.type === 'offer') {
+      console.log(`SDP Offer from ${socket.id} to ${data.targetSocketId}:`, data.offer);
+    } else if (data.type === 'answer') {
+      console.log(`SDP Answer from ${socket.id} to ${data.targetSocketId}:`, data.answer);
+    } else if (data.type === 'candidate') {
+      console.log(`ICE Candidate from ${socket.id} to ${data.targetSocketId}:`, data.candidate);
     }
 
     // Forward the signal to the target user
