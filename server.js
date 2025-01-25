@@ -45,7 +45,16 @@ io.on('connection', (socket) => {
   });
 
   // Signaling for WebRTC
+  // Signaling for WebRTC
   socket.on('signal', (data) => {
+    // Log the signaling data
+    if (data.sdp) {
+      console.log(`SDP ${data.sdp.type} from ${socket.id}:`, data.sdp);
+    } else if (data.candidate) {
+      console.log(`ICE candidate from ${socket.id}:`, data.candidate);
+    }
+
+    // Forward the signal to the target user
     socket.to(data.targetSocketId).emit('signal', data);
   });
 
