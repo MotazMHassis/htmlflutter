@@ -63,6 +63,7 @@ io.on('connection', (socket) => {
     const { targetSocketId, type, offer } = data;
     console.log(`caller id:  ${socket.id}:`);
     console.log(`callee id:  ${targetSocketId}:`);
+    console.log(`type:  ${type}:`);
     if (type === 'offer') {
       io.to(targetSocketId).emit('signal', { type: 'offer', offer });
     }
