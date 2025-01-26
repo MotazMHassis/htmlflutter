@@ -62,8 +62,9 @@ io.on('connection', (socket) => {
     const { targetSocketId } = data;
     console.log(`caller id:  ${socket.id}:`);
     console.log(`callee id:  ${targetSocketId}:`);
+    io.emit('test', data);
     io.to(targetSocketId).emit('signal', data);
-    
+
   });
   socket.on('receiveoffer', (data) => {
     socket.broadcast.emit('receiveoffe_test', data);
