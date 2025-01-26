@@ -75,7 +75,9 @@ wss.on('connection', (ws) => {
           }
           break;
 
-        case 'signal':
+        case 'offer':
+        case 'answer':
+        case 'candidate':
           // Forward WebRTC signaling data (offer, answer, ICE candidates)
           const targetUserForSignal = data.targetUsername;
           const targetWsForSignal = Array.from(onlineUsers.entries()).find(
