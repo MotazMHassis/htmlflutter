@@ -26,7 +26,12 @@ io.on('connection', (socket) => {
       io.to(receiverSocketId).emit('notification', `${sender} sent you a message`); // Send notification
     }
   });
-
+socket.on('videoCallRequest', ({ sender, receiver }) => {
+  const receiverSocketId = users[receiver];
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit('videoCallRequest', { sender });
+  }
+});
   // Handle user disconnect
   socket.on('disconnect', () => {
     const username = Object.keys(users).find((key) => users[key] === socket.id);
