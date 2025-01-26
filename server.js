@@ -59,17 +59,15 @@ io.on('connection', (socket) => {
     }
 
     // Forward the signal to the target user
+    console.log(`caller id:  ${socket.id}:`);
+    console.log(`calle id:  ${data.targetSocketId}:`);
     socket.to(data.targetSocketId).emit('signal', data);
     
   });
   socket.on('receiveoffer', (data) => {
     socket.broadcast.emit('receiveoffe_test', data);
-    if (data.type === 'offer') {
-        console.log(`SDP Offer from ${socket.id} to ${data.targetSocketId}:`, data.offer);
-      }
-      console.log(`SDP Offer from targetSocketId to ${data.targetSocketId}:`);
-      
-      socket.to(data.targetSocketId).emit('takeoffer', data);
+    console.log(`SDP Offer from targetSocketId to ${data.targetSocketId}:`);
+    socket.to(data.targetSocketId).emit('takeoffer', data);
   });
   socket.on('receiveAnswer', (data) => {
     socket.broadcast.emit('receiveAnswer_test', data);
