@@ -1,125 +1,44 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
-const { v4: uuidv4 } = require('uuid');
+const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = new Server(server);
 
-// Store online users with unique identifiers
-const onlineUsers = new Map(); // Map<string, { username: string, ws: WebSocket }>
+const users = {}; // Store users and their socket IDs
 
-// Broadcast updated user list to all connected clients
-function broadcastUserList() {
-  const userList = Array.from(onlineUsers.values()).map(user => user.username);
-  const message = JSON.stringify({
-    type: 'userList',
-    users: userList,
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Listen for a new user joining
+  socket.on('join', (username) => {
+    users[username] = socket.id; // Map username to socket ID
+    io.emit('updateUsers', Object.keys(users)); // Send updated user list to all clients
+    console.log(`${username} joined the chat`);
   });
-  
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
-}
 
-// WebSocket connection handler
-wss.on('connection', (ws) => {
-  const connectionId = uuidv4(); // Generate unique connection ID
-
-  console.log(`New WebSocket connection: ${connectionId}`);
-
-  ws.on('message', (message) => {
-    try {
-      const data = JSON.parse(message);
-      console.log(`Received message type: ${data.type}`);
-
-      switch (data.type) {
-        case 'register':
-          // Register new user
-          onlineUsers.set(connectionId, { 
-            username: data.username, 
-            ws 
-          });
-          console.log(`User registered: ${data.username}`);
-          broadcastUserList();
-          break;
-        
-        case 'callInvite':
-          // Send call invitation to target user
-          const targetUser = Array.from(onlineUsers.values())
-            .find(user => user.username === data.targetUsername);
-          
-          if (targetUser) {
-            targetUser.ws.send(JSON.stringify({
-              type: 'incomingCall',
-              callerSocketId: connectionId,
-              callerName: data.callerName,
-            }));
-            console.log(`Call invite sent to ${data.targetUsername}`);
-          } else {
-            console.log(`Target user ${data.targetUsername} not found`);
-          }
-          break;
-
-        case 'callResponse':
-          // Handle call response (accept/reject)
-          const callerUser = Array.from(onlineUsers.values())
-            .find(user => user.username === data.callerName);
-          
-          if (callerUser) {
-            callerUser.ws.send(JSON.stringify({
-              type: 'callResponse',
-              response: data.response
-            }));
-            console.log(`Call response: ${data.response}`);
-          }
-          break;
-
-        case 'offer':
-        case 'answer':
-        case 'candidate':
-          // Forward WebRTC signaling data
-          const targetUserForSignal = Array.from(onlineUsers.values())
-            .find(user => user.username === data.targetUsername);
-          
-          if (targetUserForSignal) {
-            targetUserForSignal.ws.send(JSON.stringify(data));
-            console.log(`Signaling data forwarded to ${data.targetUsername}`);
-          } else {
-            console.log(`Target user ${data.targetUsername} not found for signaling`);
-          }
-          break;
-
-        default:
-          console.warn(`Unknown message type: ${data.type}`);
-          break;
-      }
-    } catch (error) {
-      console.error('Message processing error:', error);
+  // Listen for a chat message
+  socket.on('chatMessage', ({ sender, receiver, message }) => {
+    const receiverSocketId = users[receiver];
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit('message', { sender, message }); // Send message to the receiver
+      io.to(receiverSocketId).emit('notification', `${sender} sent you a message`); // Send notification
     }
   });
 
-  // Handle user disconnection
-  ws.on('close', () => {
-    const disconnectedUser = onlineUsers.get(connectionId);
-    if (disconnectedUser) {
-      console.log(`User disconnected: ${disconnectedUser.username}`);
+  // Handle user disconnect
+  socket.on('disconnect', () => {
+    const username = Object.keys(users).find((key) => users[key] === socket.id);
+    if (username) {
+      delete users[username]; // Remove user from the list
+      io.emit('updateUsers', Object.keys(users)); // Send updated user list to all clients
+      console.log(`${username} left the chat`);
     }
-    onlineUsers.delete(connectionId);
-    broadcastUserList();
   });
 });
 
-// Error handling for the server
-server.on('error', (error) => {
-  console.error('Server error:', error);
-});
-
-// Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`WebSocket signaling server running on port ${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
