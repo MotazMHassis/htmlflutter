@@ -20,12 +20,14 @@ io.on('connection', (socket) => {
 
   // Register user
   socket.on('register', (username) => {
+    socket.broadcast.emit('register_test', data);
     onlineUsers.set(socket.id, username);
     io.emit('userList', Array.from(onlineUsers.entries()));
   });
 
   // Call invitation
   socket.on('callInvite', (data) => {
+    socket.broadcast.emit('callInvite_test', data);
     socket.to(data.targetSocketId).emit('incomingCall', {
       callerSocketId: socket.id,
       callerName: data.callerName
@@ -34,6 +36,7 @@ io.on('connection', (socket) => {
 
   // Handle call response
   socket.on('callResponse', (data) => {
+    socket.broadcast.emit('callResponse_test', data);
     if (data.response === 'accept') {
       // Broadcast accept to both parties
       io.to(data.callerSocketId).emit('callAccepted');
@@ -47,6 +50,7 @@ io.on('connection', (socket) => {
   // Signaling for WebRTC
   socket.on('signal', (data) => {
     // Log the signaling data
+    socket.broadcast.emit('signal_test', data);
     if (data.type === 'offer') {
       console.log(`SDP Offer from ${socket.id} to ${data.targetSocketId}:`, data.offer);
     } else if (data.type === 'answer') {
@@ -60,15 +64,20 @@ io.on('connection', (socket) => {
     
   });
   socket.on('receiveoffer', (data) => {
+    socket.broadcast.emit('receiveoffe_test', data);
     if (data.type === 'offer') {
         console.log(`SDP Offer from ${socket.id} to ${data.targetSocketId}:`, data.offer);
       }
+      console.log(`SDP Offer from targetSocketId to ${data.targetSocketId}:`);
+      
       socket.to(data.targetSocketId).emit('takeoffer', data);
   });
   socket.on('receiveAnswer', (data) => {
+    socket.broadcast.emit('receiveAnswer_test', data);
     if (data.type === 'answer') {
         console.log(`SDP Answer from ${socket.id} to ${data.targetSocketId}:`, data.answer);
       }
+      
       socket.to(data.targetSocketId).emit('sendeAnswer', data);
   });
   // Disconnect
