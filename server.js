@@ -20,12 +20,15 @@ io.on('connection', (socket) => {
 
   // Register user
   socket.on('register', (username) => {
+    console.log(`User ${socket.id} registered with username: ${username}`);
     onlineUsers.set(socket.id, username);
     io.emit('userList', Array.from(onlineUsers.entries()));
+    console.log('Updated user list:', Array.from(onlineUsers.entries()));
   });
 
   // Call invitation
   socket.on('callInvite', (data) => {
+    console.log(`Call invite from ${socket.id} to ${data.targetSocketId}:`, data);
     socket.to(data.targetSocketId).emit('incomingCall', {
       callerSocketId: socket.id,
       callerName: data.callerName
@@ -34,13 +37,16 @@ io.on('connection', (socket) => {
 
   // Handle call response
   socket.on('callResponse', (data) => {
+    console.log(`Call response from ${socket.id} to ${data.callerSocketId}:`, data);
     if (data.response === 'accept') {
       // Broadcast accept to both parties
       io.to(data.callerSocketId).emit('callAccepted');
       io.to(socket.id).emit('callAccepted');
+      console.log(`Call accepted by ${socket.id}`);
     } else {
       // Broadcast reject to caller
       io.to(data.callerSocketId).emit('callRejected');
+      console.log(`Call rejected by ${socket.id}`);
     }
   });
 
@@ -57,13 +63,15 @@ io.on('connection', (socket) => {
 
     // Forward the signal to the target user
     socket.to(data.targetSocketId).emit('signal', data);
+    console.log(`Signal forwarded from ${socket.id} to ${data.targetSocketId}`);
   });
 
   // Disconnect
   socket.on('disconnect', () => {
+    console.log(`User ${socket.id} disconnected`);
     onlineUsers.delete(socket.id);
     io.emit('userList', Array.from(onlineUsers.entries()));
-    console.log('User disconnected:', socket.id);
+    console.log('Updated user list:', Array.from(onlineUsers.entries()));
   });
 });
 
