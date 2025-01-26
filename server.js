@@ -20,7 +20,6 @@ io.on('connection', (socket) => {
 
   // Register user
   socket.on('register', (username) => {
-    socket.broadcast.emit('register_test', data);
     onlineUsers.set(socket.id, username);
     io.emit('userList', Array.from(onlineUsers.entries()));
   });
