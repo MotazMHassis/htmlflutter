@@ -59,14 +59,10 @@ io.on('connection', (socket) => {
     }
 
     // Forward the signal to the target user
-
-    const { targetSocketId, type, offer } = data;
+    const { targetSocketId } = data;
     console.log(`caller id:  ${socket.id}:`);
     console.log(`callee id:  ${targetSocketId}:`);
-    console.log(`type:  ${type}:`);
-    if (type === 'offer') {
-      io.to(targetSocketId).emit('signal', { type: 'offer', offer });
-    }
+    io.to(targetSocketId).emit('signal', data);
     
   });
   socket.on('receiveoffer', (data) => {
